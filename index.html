@@ -1,0 +1,457 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>New approaches to old maps</title>
+
+		<link rel="stylesheet" href="css/reveal.css"><!-- 
+		<link rel="stylesheet" href="css/theme/black.css"> -->
+		<link rel="stylesheet" href="css/theme/night.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+					<h2>New approaches to old maps</h2>
+					<h4>Initiatives underway at Oklahoma State University Library's Maps and Spatial Data</h4>
+					<small>Kevin Dyke, Maps and Spatial Data Curator<br>
+					Edmon Low Library, Oklahoma State University<br>
+					kdyke@okstate.edu&nbsp;&nbsp;&bull;&nbsp;&nbsp;@kr_dyke</small>
+				</section>
+				<section>
+					<section data-markdown>
+						<script type="text/template">
+							## Outline
+						</script>
+					</section>
+					<section>
+						<ol>
+							<li>About Maps and Spatial Data</li>
+							<li class="fragment fade-up">mapsOK</li> 
+							<li class="fragment fade-up">Stillwater from the Air</li> 
+							<li class="fragment fade-up">Georeferencing the Oklahoma Digital Maps Collection</li>
+							<li class="fragment fade-up">Virtually Reconstructing Williams Hall</li>
+							<!--<li class="fragment fade-up">Geoparsing Oral Histories</li>-->
+							<li class="fragment fade-up">MPSI Aerial Photo collection</li> 
+							<li class="fragment fade-up">OSU Digital Collections Tab</li> 
+						</ol>
+					</section>
+				</section>
+				<section>
+					<section data-markdown>
+						<script type="text/template">
+							## About Maps and Spatial Data
+						</script>
+					</section>
+				<!--
+					<section data-markdown>
+						<script type="text/template">
+						Formerly known as the Map Room
+						</script>
+						<aside class="notes">
+							Name changes are not particularly exciting, but in this case it is a clear departure. Away from a "room" full of "maps" to a place that provides "maps" and "spatial" "data" "services".
+						</aside>
+					</section>
+
+				-->
+
+				<!--
+					<section data-markdown>
+						<script type="text/template">
+							Where we are
+						</script>
+						<aside class="notes">
+							Northeast corner. Adjacent to what will one day soon be the Research and Innovation Commons.
+						</aside>
+					</section>
+				-->
+					<section data-markdown>
+						<script type="text/template">
+							What we do
+						</script>
+						<aside class="notes">
+							I teach workshops on GIS, data visuzalization, data cleaning, etc. We are actively continuing to build the map collection, particularly filling in gaps.
+
+							Digitization is the name of the game. 
+
+							Our digital map collection is approaching 10,000 items. 
+
+						</aside>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+						For today, the focus will be on the digital projects
+						</script>
+					</section>
+				</section>
+				<section>
+						
+					<section data-markdown>
+						<script type="text/template">
+							# mapsOK
+							#### Finding the maps you need, using a map!
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+							Open source technologies, including Leaflet, Carto, Bootstrap
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+							Relies on bounding boxes hand-crafted for each map in our collection.
+						</script>
+					</section>
+					<!--
+					<section data-markdown>
+						<script type="text/template">
+							What's a bounding box, you say? 
+
+							It's two latitude (north/south) and two longitude coordinates (east/west), connected by lines to create a rectangle that holds the entirety of the map in question. 
+						</script>
+					</section>
+					-->
+					<section>
+						<img style="border:none;" class="stretch" data-src="images/mapsok_bboxes_world.JPG"/>
+					</section>	
+					<section>
+						<img style="border:none;" class="stretch" data-src="images/mapsok_bboxes_ok.JPG"/>
+					</section>	
+					<section data-markdown>
+						<script type="text/template">
+							As pretty as they are, the boxes aren't visible to users. 
+						</script>
+					</section>	
+					<section data-markdown>
+						<script type="text/template">
+							They are used to filter results based on the position of the map. Zoom the map to Stillwater, you'll see maps of Stillwater. Scroll down the results list and you'll start to see mainly maps of Payne County. 
+						</script>
+					</section>					
+					<section>
+						<img style="border:none;" class="stretch" data-src="images/mapsok1.gif"/>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+							The filtering is accomplished using querying available in the PostgreSQL spatial extension (PostGIS).
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+							## Nerdy interlude 
+
+
+							```sql 
+								SELECT cartodb_id FROM {{table_name}} WHERE {{nonspatial_filters}}
+
+								 ST_GeomFromText('{{bbox_wkt}}', 4326) && the_geom
+
+								 ORDER BY 
+									(
+								      CASE
+								        WHEN ST_Contains(  St_Transform(St_geomfromtext('{{bbox_wkt}}',    
+								        	4326),3857), the_geom_webmercator)
+								            THEN area
+								        WHEN ST_Within(  St_Transform(St_geomfromtext('{{bbox_wkt}}', 4326),3857), 	
+								        	the_geom_webmercator)
+								            THEN ST_Area(St_Transform(St_geomfromtext('{{bbox_wkt}}', 4326),3857))
+								        ELSE
+								           ST_Area(ST_Intersection(
+								               St_Transform(St_geomfromtext('{{bbox_wkt}}', 4326),3857),
+								               the_geom_webmercator
+								        	))  
+								         END  
+								   / area ) 
+							```
+							<!-- .element: class="fragment" -->
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+							Another fun (to me at least!) feature of mapsOK is the direct integration of zoomable/pannable versions of each map, utilizing the IIIF protocol.
+						</script>
+						<aside class="notes">
+							International Image Interoperability Framework
+						</aside>
+					</section>
+					<section>
+						<img style="border:none;" class="stretch" data-src="images/mapsok2.gif"/>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							# Fullscreen!
+						</script>
+					</section>
+
+					<section>
+						<img style="border:none;" class="stretch" data-src="images/mapsok3.gif"/>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+							mapsOK is accessible from our website (https://info.library.okstate.edu/map-room/mapsok). 
+						</script>
+					</section>
+					<section data-background-iframe="https://okstate-maps.github.io/okmaps-search/" data-background-interactive>
+					</section>
+
+				</section>
+				<section>
+					<section data-background-video="https://files.kevinrdyke.com/stw1.webm,https://files.kevinrdyke.com/stw1.mp4" data-background-video-loop>
+							<h2 style="text-shadow: 0 0 10px black, 0 0 10px black, 0 0 10px black;">Stillwater from the Air</h2>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+							In the summer of 2017, a stalwart group of student employees undertook a project to 1) locate, 2) scan, and 3) [georeference](http://dsarchive.lclark.io/dfsarchive/wp-content/uploads/sites/122/2013/02/GeoreferencingLab.png) aerial photographs showing the town of Stillwater and the surrounding area.
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+							In the end we produced layers covering every decade between the 1930s and 1990s.  
+						</script>
+					</section>
+
+					<section>
+						<img style="border:none;" class="stretch" data-src="images/stw_bboxes.JPG"/>
+					</section>					
+
+					<section data-markdown>
+						<script type="text/template">
+							I took the need to create a web interface for our work as an opportunity to dig into recent advances in JavaScript development practices.
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+							Things such as:
+
+							- React <!-- .element: class="fragment" -->
+							- ES6 <!-- .element: class="fragment" -->
+							- Webpack <!-- .element: class="fragment" -->
+							- Babel <!-- .element: class="fragment" -->
+
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+							This approach involved a greater initial investment of time, but the effort will pay dividends in the longer term.
+						</script>
+					</section>
+					<section>
+						<img style="border:none;" class="stretch" data-src="images/stw2.gif"/>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+							While comparing eight different layers on a "normal" screen is not entirely practical, it makes for intriguing possibilities using larger displays.
+						</script>
+					</section>
+					<section data-background-iframe="https://okstate-maps.github.io/aerial-compare/" data-background-interactive>
+					</section>
+
+
+				</section>
+
+
+
+
+				<section>
+					<section>
+							<h2>Georeferencing Maps </h2>
+							<h4>from the Oklahoma Digital Maps Collection</h4>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+							We've begun a *longterm* project of georeferencing the 10,000 (and growing) maps in our digital collection.
+						</script>
+					</section>		
+
+					<section>
+						<img style="border:none;" class="stretch" data-src="images/georef1.jpg"/>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							We're initially focusing on the 2,000 maps that comprise the McCasland Collection. These maps are all sourced from the U.S. Congressional Serial Set. As largely federal government publications, these maps are free of copyright concerns.
+						</script>
+					</section>	
+
+					<section data-background-iframe="https://okstate-maps.github.io/maps-gallery/" 	data-background-interactive>
+					</section>
+					
+
+				</section>
+
+
+				<section>
+					<section data-markdown>
+						<script type="text/template">
+							## Virtually Reconstructing Williams Hall
+						</script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							The OSU Library Archives houses floorplans, schematics, and photographs for nearly every building that has stood on campus.
+						</script>
+					</section>
+					<section>
+						<img style="border:none;" class="stretch" data-src="images/williams.gif"/>
+					</section>
+				<!--
+					<section>
+						<img style="border:none;" class="stretch" data-src="images/williams1.jpg"/>
+					</section>
+					<section>
+						<img style="border:none;" class="stretch" data-src="images/williams2.jpg"/>
+					</section>
+
+					<section>
+						<img style="border:none;"  class="stretch" data-src="images/williams3.jpg"/>
+					</section>
+					<section>
+						<img style="border:none;" class="stretch" data-src="images/williams4.jpg"/>
+					</section>
+					<section>
+						<img style="border:none;"  class="stretch" data-src="images/williams5.jpg"/>
+					</section>
+					<section>
+						<img style="border:none;"  class="stretch" data-src="images/williams6.jpg"/>
+					</section>
+					<section>
+						<img style="border:none;"  class="stretch" data-src="images/williams7.jpg"/>
+					</section>
+				-->
+
+				<!--
+					<section>
+						<h2>Work in progress</h2>
+						<video  data-autoplay>
+						    <source data-src="https://files.kevinrdyke.com/williams.webm" type="video/webm" />
+						    <source data-src="https://files.kevinrdyke.com/williams.mp4" type="video/mp4" />
+						  </video>						
+					</section>
+
+				-->
+				</section>
+
+				<!--
+				<section>
+					<section data-markdown>
+						<script type="text/template">
+							## Geoparsing Oral Histories
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+							OSU Library is home to OK Oral History Research Program, which has conducted and transcribed hundreds of interviews.
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+							I'm exploring the use of CLIFF, a geoparser built with natural language processing (NLP) technology, as a way to explore our oral history collections.
+						</script>
+					</section>
+
+					<section data-markdown>
+						<script type="text/template">
+							This work is very much in its infancy, but I have successfully taken the raw text transcript of an interview and auto-generated a map of places mentioned by the interviewee.
+						</script>
+					</section>
+				
+					<section>
+						
+						<iframe width="100%" height="520" frameborder="0" src="https://krdyke.carto.com/builder/c0c3426e-bcb2-4a45-9cd5-0ba330497782/embed" allowfullscreen webkitallowfullscreen mozallowfullscreen oallowfullscreen msallowfullscreen></iframe>
+					</section>
+				</section>
+
+			-->
+
+				<section>
+					<section data-markdown>
+						<script type="text/template">
+							## MPSI Aerial Photos
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+							In the early 1990s the OSU Library received a donation of thousands of large scale, high quality aerial photos (many of which are in color) of urban areas all over the US, as well as several international locations.
+						</script>
+					</section>
+					
+
+					<section data-markdown>
+						<script type="text/template">
+							We're now beginning the process of digitizing/georeferencing this widely ranging collection. Our first test run was of Phoenix, AZ in 1990.
+						</script>
+					</section>
+
+					<section>
+						<img style="border:none;" class="stretch" data-src="images/mpsi1.gif"/>
+					</section>
+				</section>
+
+				<section>
+					<section data-markdown>
+						<script type="text/template">
+							## OSU Digital Collections Tab
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+							IIIF and the opening of OSU collections.
+						</script>
+					</section>
+					<section data-background-image="images/maptab.jpg">
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+						Available as an extension for both [Chrome](https://chrome.google.com/webstore/detail/oklahoma-state-digital-co/dnanjhnkcppckddlbgbpjnmchmpjical) and [Firefox](https://addons.mozilla.org/en-US/firefox/addon/okla-state-dig-coll-tab/).
+						</script>
+					</section>
+				</section>
+
+				<section data-markdown>
+					<script type="text/template">
+						# Wrapping up
+
+						kdyke@okstate.edu 
+
+						[@kr_dyke](https://twitter.com/kr_dyke)
+					</script>
+				</section>
+			</div>
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+			// More info about config & dependencies:
+			// - https://github.com/hakimel/reveal.js#configuration
+			// - https://github.com/hakimel/reveal.js#dependencies
+			Reveal.initialize({
+				hideAddressBar: true,
+				previewLinks: false,
+				history: true,
+				dependencies: [
+					{ src: 'plugin/markdown/marked.js' },
+					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/notes/notes.js', async: true },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				]
+			});
+		</script>
+	</body>
+</html>
