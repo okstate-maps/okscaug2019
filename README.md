@@ -1,2 +1,2 @@
-# scaug2019
-Presentation for SCAUG 2019 in Tulsa, OK.
+# OKSCAUG 2019
+Presentation for OKSCAUG 2019 in Oklahoma City, OK.
